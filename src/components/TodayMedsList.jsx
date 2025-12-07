@@ -68,7 +68,7 @@ export function TodayMedsList({
                 )}
 
                 <div>
-                  <div className="text-sm font-medium text-slate-900">
+                  <div className="text-l font-medium text-slate-900">
                     {med.name}
                   </div>
                   <div className="text-xs text-slate-500">

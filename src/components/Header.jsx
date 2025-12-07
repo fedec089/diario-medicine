@@ -8,9 +8,9 @@ export function Header({ todayLabel, onOpenAdd }) {
     <header className="border-b border-white/50 bg-white/60 backdrop-blur-xl sticky top-0 z-20">
       <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Diario Medicine</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Diario Medicine</h1>
           {todayLabel && (
-            <p className="text-xs text-slate-600">
+            <p className="text-s text-slate-600">
               Oggi è <span className="font-medium">{todayLabel}</span>
             </p>
           )}
@@ -18,9 +18,9 @@ export function Header({ todayLabel, onOpenAdd }) {
         <div className="hidden sm:flex gap-2">
           <Link href="/">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="border-slate-200 text-slate-800 bg-white/70 hover:bg-white"
+              className="border-slate-200 text-slate-800 bg-transparent cursor-pointer hover:bg-white"
             >
               Home
             </Button>
@@ -28,9 +28,9 @@ export function Header({ todayLabel, onOpenAdd }) {
 
           <Link href="/settings">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="border-slate-200 text-slate-800 bg-white/70 hover:bg-white"
+              className="border-slate-200 text-slate-800 bg-transparent cursor-pointer hover:bg-white"
             >
               Impostazioni
             </Button>

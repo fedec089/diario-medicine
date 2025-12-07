@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { TodayMedsList } from "@/components/TodayMedsList";
 import { BottomNav } from "@/components/BottomNav";
 import { AddMedicineDialog } from "@/components/AddMedicineDialog";
 import { getTodayLabel } from "@/lib/meds";
+import { WeeklyMedsList } from "@/components/WeeklyMedsList";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseSession } from "@/lib/useSupabaseSession";
 import Link from "next/link";
@@ -17,6 +18,7 @@ export default function Home() {
   const [editingMed, setEditingMed] = useState(null);
   const [loadingMeds, setLoadingMeds] = useState(true);
   const [takenToday, setTakenToday] = useState(new Set());
+  const [activeTab, setActiveTab] = useState("oggi"); // "oggi" | "settimana"
 
   const todayLabel = getTodayLabel();
   const userId = session?.user?.id;
@@ -59,10 +61,66 @@ export default function Home() {
     fetchMeds();
   }, [userId]);
 
+  const dayOfMonth = new Date().getDate();
+  const isEvenDay = dayOfMonth % 2 === 0;
+
   const medsForToday = meds.filter((m) => {
-    if (m.days?.includes("Tutti i giorni")) return true;
-    return m.days?.includes(todayLabel);
+    const days = m.days || [];
+    const matchesEveryDay = days.includes("Tutti i giorni");
+    const matchesWeekday = days.includes(todayLabel);
+    const matchesEven = days.includes("Pari") && isEvenDay;
+    const matchesOdd = days.includes("Dispari") && !isEvenDay;
+
+    return matchesEveryDay || matchesWeekday || matchesEven || matchesOdd;
   });
+
+  const weekDays = [
+    "Lunedì",
+    "Martedì",
+    "Mercoledì",
+    "Giovedì",
+    "Venerdì",
+    "Sabato",
+    "Domenica",
+  ];
+
+  const weeklyMeds = useMemo(() => {
+    const grouped = {};
+
+    const today = new Date();
+    const todayIndex = weekDays.indexOf(todayLabel);
+
+    weekDays.forEach((dayName, index) => {
+      const dateForDay = new Date(today);
+      const diff = index - todayIndex;
+      dateForDay.setDate(today.getDate() + diff);
+
+      const dayOfMonthForDay = dateForDay.getDate();
+      const isEvenForDay = dayOfMonthForDay % 2 === 0;
+
+      grouped[dayName] = meds
+        .filter((m) => {
+          const days = m.days || [];
+
+          const matchesEveryDay = days.includes("Tutti i giorni");
+          const matchesWeekday = days.includes(dayName);
+          const matchesEven = days.includes("Pari") && isEvenForDay;
+          const matchesOdd = days.includes("Dispari") && !isEvenForDay;
+
+          return (
+            matchesEveryDay ||
+            matchesWeekday ||
+            matchesEven ||
+            matchesOdd
+          );
+        })
+        .slice()
+        .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+    });
+
+    return grouped;
+  }, [meds, todayLabel]);
+
 
   const openDialogForAdd = () => {
     setEditingMed(null);
@@ -147,9 +205,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-  if (!userId) return;
+    if (!userId) return;
 
-  const fetchIntakes = async () => {
+    const fetchIntakes = async () => {
       try {
         const todayISO = getTodayISO();
         const { data, error } = await supabase
@@ -174,12 +232,12 @@ export default function Home() {
   }, [userId]);
 
   const handleToggleTaken = async (medId) => {
-  if (!userId) return;
+    if (!userId) return;
 
-  const todayISO = getTodayISO();
-  const alreadyTaken = takenToday.has(medId);
+    const todayISO = getTodayISO();
+    const alreadyTaken = takenToday.has(medId);
 
-  if (alreadyTaken) {
+    if (alreadyTaken) {
       const { error } = await supabase
         .from("med_intakes")
         .delete()
@@ -216,7 +274,6 @@ export default function Home() {
       });
     }
   };
-
 
   // 1) Session in caricamento
   if (sessionLoading) {
@@ -261,18 +318,54 @@ export default function Home() {
             </button>
           </div>
 
-          {loadingMeds ? (
-            <p className="text-sm text-slate-500">Caricamento medicine...</p>
-          ) : (
-            <TodayMedsList
-              medsForToday={medsForToday}
-              todayLabel={todayLabel}
-              onEditMed={openDialogForEdit}
-              onDeleteMed={handleDeleteMed}
-              takenToday={takenToday}
-              onToggleTaken={handleToggleTaken}
-            />
-          )}
+          <div className="pb-32 space-y-4">
+            {/* Tabs Oggi / Settimana */}
+            <div className="flex rounded-full bg-white/60 p-1 shadow-sm shadow-sky-100/60 backdrop-blur-md border border-white/70 mb-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab("oggi")}
+                className={`flex-1 py-2 text-sm font-medium rounded-full transition ${
+                  activeTab === "oggi"
+                    ? "bg-emerald-500 text-white shadow"
+                    : "text-slate-600 hover:bg-white/80"
+                }`}
+              >
+                Oggi
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("settimana")}
+                className={`flex-1 py-2 text-sm font-medium rounded-full transition ${
+                  activeTab === "settimana"
+                    ? "bg-emerald-500 text-white shadow"
+                    : "text-slate-600 hover:bg-white/80"
+                }`}
+              >
+                Settimana
+              </button>
+            </div>
+
+            {/* Contenuto tab */}
+            {loadingMeds ? (
+              <p className="text-sm text-slate-500">Caricamento medicine...</p>
+            ) : activeTab === "oggi" ? (
+              <TodayMedsList
+                medsForToday={medsForToday}
+                todayLabel={todayLabel}
+                onEditMed={openDialogForEdit}
+                onDeleteMed={handleDeleteMed}
+                takenToday={takenToday}
+                onToggleTaken={handleToggleTaken}
+              />
+            ) : (
+              <WeeklyMedsList
+                weeklyMeds={weeklyMeds}
+                weekDays={weekDays}
+                onEditMed={openDialogForEdit}
+                onDeleteMed={handleDeleteMed}
+              />
+            )}
+          </div>
         </div>
       </main>
 
