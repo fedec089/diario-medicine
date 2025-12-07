@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseSession } from "@/lib/useSupabaseSession";
 import Link from "next/link";
+import { BottomNav } from "@/components/BottomNav"; // ← assicurati che sia `BottomNav`, non `BottomNavs`
 
 export default function SettingsPage() {
   const { session, sessionLoading } = useSupabaseSession();
@@ -24,7 +25,10 @@ export default function SettingsPage() {
   const userId = session?.user?.id;
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoadingSettings(false);
+      return;
+    }
 
     const fetchSettings = async () => {
       try {
@@ -107,69 +111,73 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-100 via-slate-50 to-emerald-100 text-slate-900">
-      <Header />
-      <div className="max-w-3xl mx-auto px-4 py-6">
-        <h1 className="text-xl font-semibold mb-4">Impostazioni</h1>
+    <> 
+      <div className="min-h-screen bg-gradient-to-b from-sky-100 via-slate-50 to-emerald-100 text-slate-900">
+        <Header />
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          <h1 className="text-xl font-semibold mb-4">Impostazioni</h1>
 
-        <Card className="bg-white/80 backdrop-blur-2xl border border-white/70 shadow-lg shadow-sky-100/60">
-          <CardHeader>
-            <CardTitle className="text-slate-900">Reminder giornalieri</CardTitle>
-            <CardDescription className="text-slate-600">
-              Imposta la tua email per ricevere promemoria personalizzati sulle
-              medicine giornaliere.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loadingSettings ? (
-              <p className="text-sm text-slate-500">
-                Caricamento impostazioni...
-              </p>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-800">
-                    Email per i reminder
-                  </label>
-                  <Input
-                    type="email"
-                    placeholder="es. nome@dominio.com"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setStatus(null);
-                    }}
-                    className="bg-white/80 border-slate-200 focus:ring-emerald-400 focus:border-emerald-400"
-                  />
-                  <p className="text-xs text-slate-500">
-                    In futuro useremo questa email per inviarti un riepilogo
-                    delle medicine del giorno.
-                  </p>
-                </div>
+          <Card className="bg-white/80 backdrop-blur-2xl border border-white/70 shadow-lg shadow-sky-100/60">
+            <CardHeader>
+              <CardTitle className="text-slate-900">Reminder giornalieri</CardTitle>
+              <CardDescription className="text-slate-600">
+                Imposta la tua email per ricevere promemoria personalizzati sulle
+                medicine giornaliere.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingSettings ? (
+                <p className="text-sm text-slate-500">
+                  Caricamento impostazioni...
+                </p>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-slate-800">
+                      Email per i reminder
+                    </label>
+                    <Input
+                      type="email"
+                      placeholder="es. nome@dominio.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setStatus(null);
+                      }}
+                      className="bg-white/80 border-slate-200 focus:ring-emerald-400 focus:border-emerald-400"
+                    />
+                    <p className="text-xs text-slate-500">
+                      In futuro useremo questa email per inviarti un riepilogo
+                      delle medicine del giorno.
+                    </p>
+                  </div>
 
-                {status === "saved" && (
-                  <p className="text-xs text-emerald-600">
-                    ✅ Impostazioni salvate.
-                  </p>
-                )}
+                  {status === "saved" && (
+                    <p className="text-xs text-emerald-600">
+                      ✅ Impostazioni salvate.
+                    </p>
+                  )}
 
-                {status === "error" && (
-                  <p className="text-xs text-red-500">
-                    ⚠️ Inserisci un indirizzo email valido o riprova più tardi.
-                  </p>
-                )}
+                  {status === "error" && (
+                    <p className="text-xs text-red-500">
+                      ⚠️ Inserisci un indirizzo email valido o riprova più tardi.
+                    </p>
+                  )}
 
-                <Button
-                  type="submit"
-                  className="bg-emerald-500/90 hover:bg-emerald-500 text-white shadow-md shadow-emerald-200/60"
-                >
-                  Salva impostazioni
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+                  <Button
+                    type="submit"
+                    className="bg-emerald-500/90 hover:bg-emerald-500 text-white shadow-md shadow-emerald-200/60"
+                  >
+                    Salva impostazioni
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+
+          <BottomNav />
+        </div>
       </div>
-    </div>
+    </>
   );
 }

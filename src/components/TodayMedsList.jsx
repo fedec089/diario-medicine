@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Pencil, Trash2 } from "lucide-react";
-
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Pencil, Trash2, CheckCircle2, Circle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -14,110 +13,120 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 export function TodayMedsList({
   medsForToday,
   todayLabel,
   onEditMed,
   onDeleteMed,
+  takenToday = new Set(),
+  onToggleTaken,
 }) {
   const [deleteId, setDeleteId] = useState(null);
 
-  const confirmDelete = (id) => setDeleteId(id);
-  const closeDialog = () => setDeleteId(null);
-
-  const executeDelete = () => {
-    if (deleteId) {
+  const handleConfirmDelete = () => {
+    if (deleteId && onDeleteMed) {
       onDeleteMed(deleteId);
     }
-    closeDialog();
+    setDeleteId(null);
   };
+
+  if (!medsForToday || medsForToday.length === 0) {
+    return (
+      <p className="text-sm text-slate-500">
+        Nessuna medicina programmata per oggi ({todayLabel}).
+      </p>
+    );
+  }
 
   return (
     <>
-      <Card className="bg-white/80 backdrop-blur-2xl border border-white/70 shadow-lg shadow-sky-100/60">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between text-slate-900">
-            <span>Medicine di oggi</span>
-            <span className="text-xs text-slate-500">{todayLabel}</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {medsForToday.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              Nessuna medicina programmata per oggi.
-            </p>
-          ) : (
-            medsForToday
-              .slice()
-              .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
-              .map((med) => (
-                <div
-                  key={med.id}
-                  className="flex items-start justify-between rounded-xl border border-white/70 bg-white/70 backdrop-blur-md px-3 py-2 shadow-sm shadow-slate-200/70"
-                >
-                  <div className="flex-1 pr-3">
-                    <p className="text-sm font-medium text-slate-900">{med.name}</p>
-                    <p className="text-xs text-emerald-600 mt-0.5">
-                      {med.time || "Orario non specificato"}
-                    </p>
-                    {med.notes && (
-                      <p className="text-xs text-slate-500 mt-1">{med.notes}</p>
+      <div className="space-y-3">
+        {medsForToday.map((med) => {
+          const isTaken = takenToday.has(med.id);
+
+          return (
+            <Card
+              key={med.id}
+              className="flex items-center flex-row justify-between p-3 bg-white/80 border border-white/70 shadow-sm shadow-sky-100/50"
+            >
+              <div className="flex items-center gap-3">
+                {onToggleTaken && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleTaken(med.id)}
+                    className="p-1 rounded-full hover:bg-emerald-50 transition"
+                    aria-label={isTaken ? "Segna come non presa" : "Segna come presa"}
+                  >
+                    {isTaken ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-slate-300" />
                     )}
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      {med.days?.includes("Tutti i giorni")
-                        ? "Tutti i giorni"
-                        : med.days?.join(", ")}
-                    </p>
-                  </div>
+                  </button>
+                )}
 
-                  <div className="flex flex-col items-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onEditMed(med)}
-                      className="p-1 rounded-full border border-slate-200 bg-white/80 hover:bg-slate-50 shadow-sm"
-                      aria-label="Modifica medicina"
-                    >
-                      <Pencil className="w-4 h-4 text-slate-700" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => confirmDelete(med.id)}
-                      className="p-1 rounded-full border border-red-100 bg-white/80 hover:bg-red-50 shadow-sm"
-                      aria-label="Elimina medicina"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
+                <div>
+                  <div className="text-sm font-medium text-slate-900">
+                    {med.name}
                   </div>
+                  <div className="text-xs text-slate-500">
+                    {med.time} •{" "}
+                    {med.days?.includes("Tutti i giorni")
+                      ? "Tutti i giorni"
+                      : med.days?.join(", ")}
+                  </div>
+                  {med.notes && (
+                    <div className="text-xs text-slate-500 mt-1">
+                      {med.notes}
+                    </div>
+                  )}
+                  {isTaken && (
+                    <div className="text-[10px] text-emerald-600 mt-1">
+                      Segnata come presa oggi
+                    </div>
+                  )}
                 </div>
-              ))
-          )}
-        </CardContent>
-      </Card>
+              </div>
 
-      {/* ALERT DIALOG */}
-      <AlertDialog open={!!deleteId}>
-        <AlertDialogContent className="bg-white/90 backdrop-blur-xl border border-white/70">
+              <div className="flex items-center gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-slate-500 hover:text-slate-800"
+                  onClick={() => onEditMed && onEditMed(med)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-red-500 hover:text-red-700"
+                  onClick={() => setDeleteId(med.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-slate-900">
-              Eliminare questa medicina?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-600">
-              Questa azione non può essere annullata. La medicina verrà rimossa
-              dalla tua lista.
+            <AlertDialogTitle>Eliminare questa medicina?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Questa operazione non può essere annullata. La medicina verrà rimossa
+              anche dai promemoria futuri.
             </AlertDialogDescription>
           </AlertDialogHeader>
-
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={closeDialog}
-              className="border-slate-200 bg-white/70 hover:bg-white text-slate-800"
-            >
-              Annulla
-            </AlertDialogCancel>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
             <AlertDialogAction
-              onClick={executeDelete}
-              className="bg-red-500 hover:bg-red-600 text-white shadow-red-200"
+              className="bg-red-500 hover:bg-red-600"
+              onClick={handleConfirmDelete}
             >
               Elimina
             </AlertDialogAction>

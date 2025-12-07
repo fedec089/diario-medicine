@@ -14,44 +14,65 @@ import {
 import Link from "next/link";
 
 export default function AuthPage() {
+  const [mode, setMode] = useState("login"); // "login" | "register"
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState(null); // "sent" | "error"
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState(null); // success/error message
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const toggleMode = () => {
+    setMode(mode === "login" ? "register" : "login");
+    setStatus(null);
+    setPassword("");
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus(null);
 
-    const trimmed = email.trim();
-    if (!trimmed || !trimmed.includes("@")) {
-      setStatus("error");
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setStatus("Inserisci email e password");
       return;
     }
 
     setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: trimmed,
-        options: {
-          emailRedirectTo:
-            typeof window !== "undefined"
-              ? `${window.location.origin}/`
-              : undefined,
-        },
-      });
 
-      if (error) {
-        console.error("Errore signInWithOtp:", error);
-        setStatus("error");
-      } else {
-        setStatus("sent");
+    try {
+      if (mode === "register") {
+        const { error } = await supabase.auth.signUp({
+          email: trimmedEmail,
+          password: trimmedPassword,
+        });
+
+        if (error) {
+          setStatus(error.message);
+        } else {
+          setStatus("Registrazione completata! Ora puoi effettuare il login.");
+          setMode("login");
+        }
+      }
+
+      if (mode === "login") {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: trimmedEmail,
+          password: trimmedPassword,
+        });
+
+        if (error) {
+          setStatus(error.message);
+        } else {
+          window.location.href = "/";
+        }
       }
     } catch (err) {
-      console.error("Errore generico login:", err);
-      setStatus("error");
-    } finally {
-      setLoading(false);
+      setStatus("Errore imprevisto, riprova");
+      console.error(err);
     }
+
+    setLoading(false);
   };
 
   return (
@@ -59,57 +80,78 @@ export default function AuthPage() {
       <Card className="w-full max-w-md bg-white/80 backdrop-blur-2xl border border-white/70 shadow-lg shadow-sky-100/60">
         <CardHeader>
           <CardTitle className="text-slate-900 text-lg">
-            Accedi a Diario Medicine
+            {mode === "login" ? "Accedi" : "Registrati"}
           </CardTitle>
           <CardDescription className="text-slate-600">
-            Inserisci la tua email, ti invieremo un link di accesso.
+            {mode === "login"
+              ? "Inserisci email e password per accedere."
+              : "Crea un nuovo account."}
           </CardDescription>
         </CardHeader>
+
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-800">
-                Email
-              </label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-800">Email</label>
               <Input
                 type="email"
-                placeholder="es. nome@dominio.com"
+                placeholder="nome@dominio.com"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setStatus(null);
-                }}
-                className="bg-white/80 border-slate-200 focus:ring-emerald-400 focus:border-emerald-400"
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-white/80 border-slate-200"
               />
             </div>
 
-            {status === "sent" && (
-              <p className="text-xs text-emerald-600">
-                ✅ Controlla la tua email: ti abbiamo inviato un link.
-              </p>
-            )}
+            <div>
+              <label className="text-sm font-medium text-slate-800">Password</label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-white/80 border-slate-200"
+              />
+            </div>
 
-            {status === "error" && (
-              <p className="text-xs text-red-500">
-                ⚠️ Qualcosa è andato storto. Verifica l&apos;email o riprova.
-              </p>
+            <div className="text-right">
+            <Link href="/auth/forgot" className="text-emerald-600 text-sm hover:underline">
+                Password dimenticata?
+            </Link>
+            </div>
+
+            {status && (
+              <p className="text-xs text-center text-red-500">{status}</p>
             )}
 
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-500/90 hover:bg-emerald-500 text-white shadow-md shadow-emerald-200/60"
+              className="w-full bg-emerald-500/90 hover:bg-emerald-500 text-white"
             >
-              {loading ? "Invio..." : "Mandami il link di accesso"}
+              {loading
+                ? "Attendere..."
+                : mode === "login"
+                ? "Accedi"
+                : "Registrati"}
             </Button>
           </form>
+
+          <div className="mt-4 text-center text-sm">
+            <button
+              onClick={toggleMode}
+              className="text-emerald-600 hover:underline"
+            >
+              {mode === "login"
+                ? "Non hai un account? Registrati"
+                : "Hai già un account? Accedi"}
+            </button>
+          </div>
 
           <p className="mt-4 text-xs text-slate-500 text-center">
             Torna alla{" "}
             <Link href="/" className="text-emerald-600 hover:underline">
-              home
+              Home
             </Link>
-            .
           </p>
         </CardContent>
       </Card>

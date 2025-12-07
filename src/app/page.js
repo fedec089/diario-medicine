@@ -16,9 +16,18 @@ export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMed, setEditingMed] = useState(null);
   const [loadingMeds, setLoadingMeds] = useState(true);
+  const [takenToday, setTakenToday] = useState(new Set());
 
   const todayLabel = getTodayLabel();
   const userId = session?.user?.id;
+
+  const getTodayISO = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
 
   // Carica medicine quando ho un userId
   useEffect(() => {
@@ -137,6 +146,78 @@ export default function Home() {
     await supabase.auth.signOut();
   };
 
+  useEffect(() => {
+  if (!userId) return;
+
+  const fetchIntakes = async () => {
+      try {
+        const todayISO = getTodayISO();
+        const { data, error } = await supabase
+          .from("med_intakes")
+          .select("med_id")
+          .eq("user_id", userId)
+          .eq("date", todayISO);
+
+        if (error) {
+          console.error("Errore fetch intakes:", error);
+          return;
+        }
+
+        const ids = new Set(data?.map((row) => row.med_id) || []);
+        setTakenToday(ids);
+      } catch (e) {
+        console.error("Errore generico fetch intakes:", e);
+      }
+    };
+
+    fetchIntakes();
+  }, [userId]);
+
+  const handleToggleTaken = async (medId) => {
+  if (!userId) return;
+
+  const todayISO = getTodayISO();
+  const alreadyTaken = takenToday.has(medId);
+
+  if (alreadyTaken) {
+      const { error } = await supabase
+        .from("med_intakes")
+        .delete()
+        .eq("user_id", userId)
+        .eq("med_id", medId)
+        .eq("date", todayISO);
+
+      if (error) {
+        console.error("Errore delete intake:", error);
+        return;
+      }
+
+      setTakenToday((prev) => {
+        const copy = new Set(prev);
+        copy.delete(medId);
+        return copy;
+      });
+    } else {
+      const { error } = await supabase.from("med_intakes").insert({
+        user_id: userId,
+        med_id: medId,
+        date: todayISO,
+      });
+
+      if (error && error.code !== "23505") {
+        console.error("Errore insert intake:", error);
+        return;
+      }
+
+      setTakenToday((prev) => {
+        const copy = new Set(prev);
+        copy.add(medId);
+        return copy;
+      });
+    }
+  };
+
+
   // 1) Session in caricamento
   if (sessionLoading) {
     return (
@@ -188,6 +269,8 @@ export default function Home() {
               todayLabel={todayLabel}
               onEditMed={openDialogForEdit}
               onDeleteMed={handleDeleteMed}
+              takenToday={takenToday}
+              onToggleTaken={handleToggleTaken}
             />
           )}
         </div>
