@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "lucide-react";
 
 export function Header({ todayLabel, onOpenAdd }) {
   return (
@@ -26,6 +27,16 @@ export function Header({ todayLabel, onOpenAdd }) {
             </Button>
           </Link>
 
+          <Link href="/history">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="border-slate-200 text-slate-800 bg-transparent cursor-pointer hover:bg-white"
+            >              
+              Storico
+            </Button>
+          </Link>
+
           <Link href="/settings">
             <Button
               variant="ghost"
@@ -35,6 +46,7 @@ export function Header({ todayLabel, onOpenAdd }) {
               Impostazioni
             </Button>
           </Link>
+
 
           {onOpenAdd && (
             <Button

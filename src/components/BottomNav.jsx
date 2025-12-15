@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home, Plus, Settings } from "lucide-react";
+import { Home, Plus, Settings, LineChart } from "lucide-react";
 
 export function BottomNav({ onOpenAdd }) {
   return (
@@ -13,6 +13,15 @@ export function BottomNav({ onOpenAdd }) {
         >
           <Home className="w-5 h-5 mb-0.5 stroke-slate-700" />
           Home
+        </Link>
+
+        {/* History */}
+        <Link
+          href="/history"
+          className="flex-1 py-2 flex flex-col items-center justify-center text-xs text-slate-700"
+        >
+          <LineChart className="w-5 h-5 mb-0.5 stroke-slate-700" />
+          Storico
         </Link>
 
         {/* Add medicine */}
